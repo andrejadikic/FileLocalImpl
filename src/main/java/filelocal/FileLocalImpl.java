@@ -13,6 +13,10 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -32,11 +36,10 @@ public class FileLocalImpl extends FileManager {
             return false;
         }
     }
-
+//parentPath je apsolutna putanja
     @Override
-    protected boolean checkConfig(String parentPath, String ext, long size, int n_number) {
-        //TODO dodati da se prosledjuje i name od file i sta ce nam nnumber
-        String name = "bhcdsbh";
+    protected boolean checkConfig(String parentPath, String ext, long size) {
+
         if(getRootPath()==null)
             return true;
         try {
@@ -48,9 +51,8 @@ public class FileLocalImpl extends FileManager {
                 names.add(path1.toString());
             }
             return !getConfiguration().getExcludedExt().contains(ext) &&
-                    !names.contains(name) &&
                     getConfiguration().getSize() >= Files.size(rootPath) + size &&
-                    getConfiguration().getFile_n() >= names.size() + n_number;
+                    getConfiguration().getFile_n() >= names.size() + 1;
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -70,7 +72,7 @@ public class FileLocalImpl extends FileManager {
         if (lastIndexOf != -1) {
             ext = name.substring(lastIndexOf);
         }
-        if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),ext,dir.length(),1)){
+        if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),ext,dir.length())){
             dir.mkdir();
         }
 //        if(!dir.getParentFile().exists()){
@@ -82,9 +84,10 @@ public class FileLocalImpl extends FileManager {
     public boolean delete(String path) {
         return new File(getRootPath()+File.separator+path).delete();
     }
-    //TODO da se doda i ime file koje se premesta ili je oldpath sa imenom a newpath samo destinacija a da sami dodamo ime
+
     @Override
     public boolean move(String oldPath, String newPath) {
+        // newPath je destinacija bez imena
         try {
             Files.move(Paths.get(getRootPath() + File.separator + oldPath),
                     Paths.get(getRootPath() + File.separator + newPath));
@@ -119,10 +122,28 @@ public class FileLocalImpl extends FileManager {
         return false;
     }
 
-
-
     @Override
-    public List<MyFile> searchDir(String s) {
+    public List<MyFile> searchDir(String filepath) {
+        Path path = Paths.get(getRootPath()+File.separator + filepath);
+        List<MyFile> myFiles = new ArrayList<>();
+        try{
+            DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path);
+            for(Path path1:directoryStream){
+                BasicFileAttributes attr = Files.readAttributes(path1, BasicFileAttributes.class);
+                long size = Files.size(path);
+                //Date lastM = attr.lastModifiedTime();
+                FileTime time = attr.lastModifiedTime();
+
+                // Convert the FileTime to LocalDateTime
+                LocalDateTime ldt =  LocalDateTime.ofInstant( time.toInstant(), ZoneId.systemDefault());
+
+                //myFiles.add(new MyFile())
+
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         return null;
     }
 
@@ -163,7 +184,7 @@ public class FileLocalImpl extends FileManager {
     }
 
     @Override
-    public List<MyFile> filterByPeriod(String s, Date date, Date date1, boolean b) {
+    public List<MyFile> filterByPeriod(String s, LocalDateTime localDateTime, LocalDateTime localDateTime1, boolean b) {
         return null;
     }
 
