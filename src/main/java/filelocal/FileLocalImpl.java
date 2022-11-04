@@ -65,7 +65,7 @@ public class FileLocalImpl extends FileManager {
     @Override
     public boolean mkdir(String path, String name) {
         String separator = System.getProperty("file.separator");
-        File dir = (getRootPath()!=null? new File(getRootPath()+path+separator+name):
+        File dir = (getRootPath()!=null? new File(getRootPath()+File.separator+path+separator+name):
                 new File(path+separator+name));
         String ext="";
         int lastIndexOf = name.lastIndexOf(".");
