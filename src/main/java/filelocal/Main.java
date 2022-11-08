@@ -2,6 +2,7 @@ package filelocal;
 
 
 import Data.MyFile;
+import org.apache.commons.io.FileUtils;
 import paket.Configuration;
 
 import java.io.File;
@@ -42,6 +43,8 @@ public class Main {
 //        fileLocal.mkdir("","aa",7,true);
 //        fileLocal.mkdir("dir",5);
         //fileLocal.delete("dir_1");
+
+        System.out.println(FileUtils.sizeOfDirectory(file));
         System.out.println(fileLocal.searchDir(""));
 
 //        fileLocal.mkdir("nsdjfn","dirr",10,false);

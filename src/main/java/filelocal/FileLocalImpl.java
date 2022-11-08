@@ -4,6 +4,8 @@ package filelocal;
 import Data.MyFile;
 import com.google.gson.Gson;
 import lombok.Getter;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import paket.Configuration;
 import paket.FileManager;
 import paket.Metadata;
@@ -16,19 +18,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 public class FileLocalImpl extends FileManager {
-
-//    public FileLocalImpl() {
-//        rootPath="";
-//    }
 
     @Override
     public boolean createRoot(String path, String name, Configuration configuration) throws IOException {
@@ -57,16 +54,13 @@ public class FileLocalImpl extends FileManager {
                 DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path);
                 for(Path path1:directoryStream){
                     names.add(path1.toString());
-
                 }
                 boolean brojFajlova = (configuration.getFile_n().size() == 0) ||
                         (!configuration.getFile_n().containsKey(parentPath)) ||
                         (configuration.getFile_n().containsKey(parentPath) && configuration.getFile_n().get(parentPath)>=names.size()+1);
-                //System.out.println(parentPath+" "+ configuration.getFile_n().get(parentPath) + " \n"+ names);
                 return !configuration.getExcludedExt().contains(ext) &&
                         configuration.getSize() >= Files.size(rootPath) + size &&
                         brojFajlova;
-                // TODO za mapu filen
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -82,11 +76,9 @@ public class FileLocalImpl extends FileManager {
     public boolean mkdir(String path, String name) {
         File dir = new File(getFullPath(path+File.separator+name));
         String ext = name.lastIndexOf(".")!=-1 ? name.substring(name.lastIndexOf(".")+1): "";
-        if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),ext,dir.length())){
+        if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),ext,FileUtils.sizeOf(dir))){
             dir.mkdir();
         }
-//        if(!dir.getParentFile().exists()){
-//            dir.mkdirs();
         return dir.exists();
     }
 
@@ -99,9 +91,12 @@ public class FileLocalImpl extends FileManager {
     public boolean move(String oldPath, String newPath) {
         // newPath je destinacija bez imena
         try {
-            Files.move(Paths.get(getFullPath(oldPath)),
-                    Paths.get(getFullPath(newPath)));
-            return true;
+            String ext = FilenameUtils.getExtension(oldPath);
+            String newP = getFullPath(newPath)+File.separator+FilenameUtils.getName(oldPath);
+            if(checkConfig(getFullPath(newPath),ext,FileUtils.sizeOf(new File(getFullPath(oldPath))))){
+                Files.move(Paths.get(getFullPath(oldPath)), Paths.get(newP));
+                return true;
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -110,26 +105,39 @@ public class FileLocalImpl extends FileManager {
 
     @Override
     public boolean rename(String path, String name) {
-        String newPath = Paths.get(getFullPath(path)).getParent().toString()
-                + File.separator + name;
+        String newPath = Paths.get(getFullPath(path)).getParent().toString() + File.separator + name;
         try {
-            Files.move(Paths.get(getFullPath(path)),
-                    Paths.get(newPath));
-            return true;
+            Files.move(Paths.get(getFullPath(path)), Paths.get(newPath));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return false;
+        return new File(newPath).exists();
     }
 
     @Override
-    public boolean download(String s, String s1) {
-        return false;
+    public boolean download(String item, String dest) {
+        File it = new File(getFullPath(item));
+        File des = new File(dest+File.separator+it.getName());
+        try {
+            FileUtils.copyFile(it,des);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return des.exists();
     }
 
     @Override
-    public boolean upload(String s, String s1) {
-        return false;
+    public boolean upload(String item, String dest) {
+        File it = new File(item);
+        File des = new File(getFullPath(dest)+File.separator+it.getName());
+        try {
+            String ext = item.lastIndexOf(".")!=-1 ? item.substring(item.lastIndexOf(".")+1): "";
+            if(checkConfig(getFullPath(dest),ext,FileUtils.sizeOf(it)))
+                FileUtils.copyFile(it,des);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return des.exists();
     }
 
     @Override
@@ -139,13 +147,16 @@ public class FileLocalImpl extends FileManager {
         try{
             DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path);
             for(Path path1:directoryStream){
-                BasicFileAttributes attr = Files.readAttributes(path1, BasicFileAttributes.class);
-                String name = path1.getFileName().toString();
-                String ext = name.lastIndexOf(".")!=-1 ? name.substring(name.lastIndexOf(".")+1): "";
-                long size = Files.size(path);
-                LocalDateTime lastModified =  LocalDateTime.ofInstant( attr.lastModifiedTime().toInstant(), ZoneId.systemDefault());
-                LocalDateTime timeCreated = LocalDateTime.ofInstant(attr.creationTime().toInstant(), ZoneId.systemDefault());
-                myFiles.add(new MyFile(getFullPath(path1.toString()),name,size,lastModified,timeCreated,ext));
+                File file = new File(path1.toString());
+                if(file.isFile()) {
+                    BasicFileAttributes attr = Files.readAttributes(path1, BasicFileAttributes.class);
+                    String name = file.getName();
+                    String ext = FilenameUtils.getExtension(path1.toString());
+                    long size = FileUtils.sizeOf(file);
+                    LocalDateTime lastModified = LocalDateTime.ofInstant(attr.lastModifiedTime().toInstant(), ZoneId.systemDefault());
+                    LocalDateTime timeCreated = LocalDateTime.ofInstant(attr.creationTime().toInstant(), ZoneId.systemDefault());
+                    myFiles.add(new MyFile(getFullPath(path1.toString()), name, size, lastModified, timeCreated, ext));
+                }
             }
 
         }catch (Exception e){
@@ -156,22 +167,93 @@ public class FileLocalImpl extends FileManager {
 
 
     @Override
-    public List<MyFile> searchSubDir(String s) {
-        return null;
+    public List<MyFile> searchSubDir(String filepath) {
+        Path path = Paths.get(getFullPath(filepath));
+        List<MyFile> myFiles = new ArrayList<>();
+        try{
+            DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path);
+            for(Path path1:directoryStream){
+                File file = new File(path1.toString());
+                if(file.isDirectory()) {
+                    myFiles.addAll(searchSubDir(path1.toString()));
+                    // todo mora da se poradi na ovom
+
+                }else{
+                    BasicFileAttributes attr = Files.readAttributes(path1, BasicFileAttributes.class);
+                    String name = file.getName();
+                    String ext = FilenameUtils.getExtension(path1.toString());
+                    long size = FileUtils.sizeOf(file);
+                    LocalDateTime lastModified = LocalDateTime.ofInstant(attr.lastModifiedTime().toInstant(), ZoneId.systemDefault());
+                    LocalDateTime timeCreated = LocalDateTime.ofInstant(attr.creationTime().toInstant(), ZoneId.systemDefault());
+                    myFiles.add(new MyFile(getFullPath(path1.toString()), name, size, lastModified, timeCreated, ext));
+                }
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return myFiles;
     }
 
     @Override
-    public List<MyFile> filterByExt(String s, String s1) {
-        return null;
+    public List<MyFile> filterByExt(String filepath, String extFilter) {
+        Path path = Paths.get(getFullPath(filepath));
+        List<MyFile> myFiles = new ArrayList<>();
+        try{
+            DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path);
+            for(Path path1:directoryStream){
+                File file = new File(path1.toString());
+                if(file.isFile()) {
+                    BasicFileAttributes attr = Files.readAttributes(path1, BasicFileAttributes.class);
+                    String name = file.getName();
+                    String ext = FilenameUtils.getExtension(path1.toString());
+                    long size = FileUtils.sizeOf(file);
+                    LocalDateTime lastModified = LocalDateTime.ofInstant(attr.lastModifiedTime().toInstant(), ZoneId.systemDefault());
+                    LocalDateTime timeCreated = LocalDateTime.ofInstant(attr.creationTime().toInstant(), ZoneId.systemDefault());
+                    if(ext.equalsIgnoreCase(extFilter))
+                        myFiles.add(new MyFile(getFullPath(path1.toString()), name, size, lastModified, timeCreated, ext));
+                }
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return myFiles;
+    }
+//substr part of name of file
+    @Override
+    public List<MyFile> searchSubstring(String substr) {
+        Path path = Paths.get(getFullPath(rootPath));
+        List<MyFile> myFiles = new ArrayList<>();
+        try{
+            DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path);
+            for(Path path1:directoryStream){
+                File file = new File(path1.toString());
+                String name = file.getName();
+                if(file.isFile() && name.contains(substr)) {
+                    BasicFileAttributes attr = Files.readAttributes(path1, BasicFileAttributes.class);
+                    String ext = FilenameUtils.getExtension(path1.toString());
+                    long size = FileUtils.sizeOf(file);
+                    LocalDateTime lastModified = LocalDateTime.ofInstant(attr.lastModifiedTime().toInstant(), ZoneId.systemDefault());
+                    LocalDateTime timeCreated = LocalDateTime.ofInstant(attr.creationTime().toInstant(), ZoneId.systemDefault());
+                    myFiles.add(new MyFile(getFullPath(path1.toString()), name, size, lastModified, timeCreated, ext));
+                }else{
+                    myFiles.addAll(searchSubstring(path1.toString()));
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return myFiles;
     }
 
     @Override
-    public List<MyFile> searchSubstring(String s) {
-        return null;
-    }
-
-    @Override
-    public boolean existName(String s, String s1) {
+    public boolean existName(String filepath, String name) {
+        File file = new File(getFullPath(filepath));
+        for(File file1: Objects.requireNonNull(file.listFiles())){
+            if(file1.getName().equalsIgnoreCase(name))
+                return true;
+        }
         return false;
     }
 
@@ -213,7 +295,7 @@ public class FileLocalImpl extends FileManager {
 
     @Override
     protected String getFullPath(String s) {
-        if(rootPath==null)
+        if(rootPath==null || s.startsWith(rootPath))
             return s;
         if(s.equalsIgnoreCase(rootPath) || s.equals(""))
             return rootPath;
