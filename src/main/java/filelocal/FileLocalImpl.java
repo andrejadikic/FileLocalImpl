@@ -8,7 +8,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import paket.Configuration;
 import paket.FileManager;
-import paket.Metadata;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -77,7 +76,7 @@ public class FileLocalImpl extends FileManager {
         File dir = new File(getFullPath(path+File.separator+name));
         String ext = name.lastIndexOf(".")!=-1 ? name.substring(name.lastIndexOf(".")+1): "";
         if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),ext,FileUtils.sizeOf(dir))){
-            dir.mkdir();
+            return dir.mkdir();
         }
         return dir.exists();
     }
@@ -194,7 +193,7 @@ public class FileLocalImpl extends FileManager {
         }
         return myFiles;
     }
-
+    // ext u direktorijumu i svim poddirektorijumima
     @Override
     public List<MyFile> filterByExt(String filepath, String extFilter) {
         Path path = Paths.get(getFullPath(filepath));
@@ -259,17 +258,6 @@ public class FileLocalImpl extends FileManager {
 
     @Override
     public List<String> getParentPath(String s) {
-        return null;
-    }
-
-    @Override
-    public List<MyFile> sortBy(List<MyFile> list, Metadata metadata) {
-        return null;
-    }
-
-    @Override
-    public List<String> filterData(List<MyFile> list, List<Metadata> list1) {
-
         return null;
     }
 
