@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import paket.Configuration;
 import paket.FileManager;
+import paket.RepoManager;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -26,6 +27,10 @@ import java.util.Objects;
 
 @Getter
 public class FileLocalImpl extends FileManager {
+
+    static {
+        RepoManager.registerManager(new FileLocalImpl());
+    }
 
     @Override
     public boolean createRoot(String path, String name, Configuration configuration) throws MyException {
