@@ -1,6 +1,7 @@
 package filelocal;
 
 
+import Data.MyException;
 import Data.MyFile;
 import com.google.gson.Gson;
 import lombok.Getter;
@@ -27,21 +28,19 @@ import java.util.Objects;
 public class FileLocalImpl extends FileManager {
 
     @Override
-    public boolean createRoot(String path, String name, Configuration configuration) throws IOException {
+    public boolean createRoot(String path, String name, Configuration configuration) throws MyException {
         if(mkdir(path,name)){
             rootPath=(path+File.separator+name);
-            this.configuration=(configuration);
+            this.configuration=configuration;
             //saveConfig();
             return true;
         }else{
-            System.out.println("Error found");
-            return false;
+            throw new MyException("Nije napravljeno skladiste");
         }
     }
-//parentPath je apsolutna putanja
+// parentPath je apsolutna putanja
     @Override
-    protected boolean checkConfig(String parentPath, String ext, long size) {
-
+    protected boolean checkConfig(String parentPath, String ext, long size) throws MyException{
         if(rootPath==null)
             return true;
         else{
@@ -57,37 +56,43 @@ public class FileLocalImpl extends FileManager {
                 boolean brojFajlova = (configuration.getFile_n().size() == 0) ||
                         (!configuration.getFile_n().containsKey(parentPath)) ||
                         (configuration.getFile_n().containsKey(parentPath) && configuration.getFile_n().get(parentPath)>=names.size()+1);
-                return !configuration.getExcludedExt().contains(ext) &&
+                boolean check = !configuration.getExcludedExt().contains(ext) &&
                         configuration.getSize() >= Files.size(rootPath) + size &&
                         brojFajlova;
-
+                if(!check)
+                    throw new MyException("Proveri konfiguraciju");
+                return check;
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new MyException(e.getMessage());
             }
         }
-
-        return false;
     }
 
 
 
     @Override
-    public boolean mkdir(String path, String name) {
+    public boolean mkdir(String path, String name)  throws MyException{
         File dir = new File(getFullPath(path+File.separator+name));
         String ext = name.lastIndexOf(".")!=-1 ? name.substring(name.lastIndexOf(".")+1): "";
         if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),ext,FileUtils.sizeOf(dir))){
             return dir.mkdir();
         }
+        if(!dir.getParentFile().exists())
+            throw new MyException("Ne postoji roditeljski direktorijum");
+
         return dir.exists();
     }
 
     @Override
-    public boolean delete(String path) {
-        return new File(getFullPath(path)).delete();
+    public boolean delete(String path) throws MyException{
+        boolean del = new File(getFullPath(path)).delete();
+        if(del)
+            return true;
+        throw new MyException("Nije izbrisan");
     }
 
     @Override
-    public boolean move(String oldPath, String newPath) {
+    public boolean move(String oldPath, String newPath) throws MyException{
         // newPath je destinacija bez imena
         try {
             String ext = FilenameUtils.getExtension(oldPath);
@@ -97,36 +102,36 @@ public class FileLocalImpl extends FileManager {
                 return true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new MyException(e.getMessage());
         }
         return false;
     }
 
     @Override
-    public boolean rename(String path, String name) {
+    public boolean rename(String path, String name) throws MyException{
         String newPath = Paths.get(getFullPath(path)).getParent().toString() + File.separator + name;
         try {
             Files.move(Paths.get(getFullPath(path)), Paths.get(newPath));
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new MyException(e.getMessage());
         }
         return new File(newPath).exists();
     }
 
     @Override
-    public boolean download(String item, String dest) {
+    public boolean download(String item, String dest) throws MyException{
         File it = new File(getFullPath(item));
         File des = new File(dest+File.separator+it.getName());
         try {
             FileUtils.copyFile(it,des);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new MyException(e.getMessage());
         }
         return des.exists();
     }
 
     @Override
-    public boolean upload(String item, String dest) {
+    public boolean upload(String item, String dest) throws MyException{
         File it = new File(item);
         File des = new File(getFullPath(dest)+File.separator+it.getName());
         try {
@@ -134,13 +139,13 @@ public class FileLocalImpl extends FileManager {
             if(checkConfig(getFullPath(dest),ext,FileUtils.sizeOf(it)))
                 FileUtils.copyFile(it,des);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new MyException(e.getMessage());
         }
         return des.exists();
     }
 
     @Override
-    public List<MyFile> searchDir(String filepath) {
+    public List<MyFile> searchDir(String filepath) throws MyException{
         Path path = Paths.get(getFullPath(filepath));
         List<MyFile> myFiles = new ArrayList<>();
         try{
@@ -157,16 +162,15 @@ public class FileLocalImpl extends FileManager {
                     myFiles.add(new MyFile(getFullPath(path1.toString()), name, size, lastModified, timeCreated, ext));
                 }
             }
-
         }catch (Exception e){
-            e.printStackTrace();
+            throw new MyException(e.getMessage());
         }
         return myFiles;
     }
 
 
     @Override
-    public List<MyFile> searchSubDir(String filepath) {
+    public List<MyFile> searchSubDir(String filepath) throws MyException{
         Path path = Paths.get(getFullPath(filepath));
         List<MyFile> myFiles = new ArrayList<>();
         try{
@@ -189,13 +193,13 @@ public class FileLocalImpl extends FileManager {
             }
 
         }catch (Exception e){
-            e.printStackTrace();
+            throw new MyException(e.getMessage());
         }
         return myFiles;
     }
     // ext u direktorijumu i svim poddirektorijumima
     @Override
-    public List<MyFile> filterByExt(String filepath, String extFilter) {
+    public List<MyFile> filterByExt(String filepath, String extFilter) throws MyException{
         Path path = Paths.get(getFullPath(filepath));
         List<MyFile> myFiles = new ArrayList<>();
         try{
@@ -215,13 +219,13 @@ public class FileLocalImpl extends FileManager {
             }
 
         }catch (Exception e){
-            e.printStackTrace();
+            throw new MyException(e.getMessage());
         }
         return myFiles;
     }
 //substr part of name of file
     @Override
-    public List<MyFile> searchSubstring(String substr) {
+    public List<MyFile> searchSubstring(String substr) throws MyException{
         Path path = Paths.get(getFullPath(rootPath));
         List<MyFile> myFiles = new ArrayList<>();
         try{
@@ -241,14 +245,16 @@ public class FileLocalImpl extends FileManager {
                 }
             }
         }catch (Exception e){
-            e.printStackTrace();
+            throw new MyException(e.getMessage());
         }
         return myFiles;
     }
 
     @Override
-    public boolean existName(String filepath, String name) {
+    public boolean existName(String filepath, String name) throws MyException{
         File file = new File(getFullPath(filepath));
+        if(!file.exists())
+            throw new MyException("Nije dobra putanja");
         for(File file1: Objects.requireNonNull(file.listFiles())){
             if(file1.getName().equalsIgnoreCase(name))
                 return true;
@@ -257,17 +263,17 @@ public class FileLocalImpl extends FileManager {
     }
 
     @Override
-    public List<String> getParentPath(String s) {
+    public List<String> getParentPath(String s) throws MyException {
         return null;
     }
 
     @Override
-    public List<MyFile> filterByPeriod(String s, LocalDateTime localDateTime, LocalDateTime localDateTime1, boolean b) {
+    public List<MyFile> filterByPeriod(String s, LocalDateTime localDateTime, LocalDateTime localDateTime1, boolean b) throws MyException{
         return null;
     }
 
     @Override
-    public void saveConfig() {
+    public void saveConfig() throws MyException{
 
         try(FileWriter writer = new FileWriter(rootPath+File.separator+"config.json")) {
             Gson gson = new Gson();
@@ -276,13 +282,13 @@ public class FileLocalImpl extends FileManager {
             //File javaFile = new File("src/main/resources/config.json");
 
         }catch (Exception e){
-            e.printStackTrace();
+            throw new MyException(e.getMessage());
         }
 
     }
 
     @Override
-    protected String getFullPath(String s) {
+    protected String getFullPath(String s){
         if(rootPath==null || s.startsWith(rootPath))
             return s;
         if(s.equalsIgnoreCase(rootPath) || s.equals(""))

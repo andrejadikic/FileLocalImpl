@@ -1,6 +1,7 @@
 package filelocal;
 
 
+import Data.MyException;
 import Data.MyFile;
 import org.apache.commons.io.FileUtils;
 import paket.Configuration;
@@ -19,16 +20,12 @@ import java.util.ArrayList;
 
 public class Main {
     private MyFile myFile;
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, MyException {
         FileLocalImpl fileLocal = new FileLocalImpl();
         fileLocal.createRoot("/Users/andrejadikic/Documents/SKProjekat","root",new Configuration(),8);
-        fileLocal.saveConfig();
-
-
         File file = new File("/Users/andrejadikic/Documents/SKProjekat");
 
         Path path = Paths.get("/Users/andrejadikic/Documents/SKProjekat");
-        System.out.println(Files.size(path));
 //        BasicFileAttributes attr = Files.readAttributes(path, BasicFileAttributes.class);
 //        FileTime time = attr.lastModifiedTime();
 //        LocalDateTime ldt =  LocalDateTime.ofInstant( time.toInstant(), ZoneId.systemDefault());
