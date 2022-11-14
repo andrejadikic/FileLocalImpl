@@ -33,19 +33,20 @@ public class FileLocalImpl extends FileManager {
     }
 
     @Override
-    public boolean createRoot(String path, String name, Configuration configuration) throws MyException {
+    public boolean createRoot(String path, String name, Configuration configuration) {
         if(mkdir(path,name)){
             rootPath=(path+File.separator+name);
             this.configuration=configuration;
             //saveConfig();
             return true;
         }else{
-            throw new MyException("Nije napravljeno skladiste");
+            System.out.println("nije napravljeno");
+            return false;
         }
     }
 // parentPath je apsolutna putanja
     @Override
-    protected boolean checkConfig(String parentPath, String ext, long size) throws MyException{
+    protected boolean checkConfig(String parentPath, String ext, long size){
         if(rootPath==null)
             return true;
         else{
@@ -65,35 +66,33 @@ public class FileLocalImpl extends FileManager {
                         configuration.getSize() >= Files.size(rootPath) + size &&
                         brojFajlova;
                 if(!check)
-                    throw new MyException("Proveri konfiguraciju");
+                    System.out.println("Proveri konfiguraciju");
                 return check;
             } catch (IOException e) {
-                throw new MyException(e.getMessage());
+                e.printStackTrace();
             }
+            return false;
         }
     }
 
 
 
     @Override
-    public boolean mkdir(String path, String name)  throws MyException{
+    public boolean mkdir(String path, String name) {
         File dir = new File(getFullPath(path+File.separator+name));
         String ext = name.lastIndexOf(".")!=-1 ? name.substring(name.lastIndexOf(".")+1): "";
-        if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),ext,FileUtils.sizeOf(dir))){
+        if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),ext,0)){
             return dir.mkdir();
         }
-        if(!dir.getParentFile().exists())
-            throw new MyException("Ne postoji roditeljski direktorijum");
-
         return dir.exists();
     }
 
     @Override
-    public boolean delete(String path) throws MyException{
+    public boolean delete(String path){
         boolean del = new File(getFullPath(path)).delete();
         if(del)
             return true;
-        throw new MyException("Nije izbrisan");
+        return false;
     }
 
     @Override
@@ -113,30 +112,30 @@ public class FileLocalImpl extends FileManager {
     }
 
     @Override
-    public boolean rename(String path, String name) throws MyException{
+    public boolean rename(String path, String name){
         String newPath = Paths.get(getFullPath(path)).getParent().toString() + File.separator + name;
         try {
             Files.move(Paths.get(getFullPath(path)), Paths.get(newPath));
         } catch (Exception e) {
-            throw new MyException(e.getMessage());
+            e.printStackTrace();
         }
         return new File(newPath).exists();
     }
 
     @Override
-    public boolean download(String item, String dest) throws MyException{
+    public boolean download(String item, String dest) {
         File it = new File(getFullPath(item));
         File des = new File(dest+File.separator+it.getName());
         try {
             FileUtils.copyFile(it,des);
         } catch (IOException e) {
-            throw new MyException(e.getMessage());
+
         }
         return des.exists();
     }
 
     @Override
-    public boolean upload(String item, String dest) throws MyException{
+    public boolean upload(String item, String dest){
         File it = new File(item);
         File des = new File(getFullPath(dest)+File.separator+it.getName());
         try {
@@ -144,13 +143,13 @@ public class FileLocalImpl extends FileManager {
             if(checkConfig(getFullPath(dest),ext,FileUtils.sizeOf(it)))
                 FileUtils.copyFile(it,des);
         } catch (IOException e) {
-            throw new MyException(e.getMessage());
+            e.printStackTrace();
         }
         return des.exists();
     }
 
     @Override
-    public List<MyFile> searchDir(String filepath) throws MyException{
+    public List<MyFile> searchDir(String filepath) {
         Path path = Paths.get(getFullPath(filepath));
         List<MyFile> myFiles = new ArrayList<>();
         try{
@@ -168,14 +167,14 @@ public class FileLocalImpl extends FileManager {
                 }
             }
         }catch (Exception e){
-            throw new MyException(e.getMessage());
+            e.printStackTrace();
         }
         return myFiles;
     }
 
 
     @Override
-    public List<MyFile> searchSubDir(String filepath) throws MyException{
+    public List<MyFile> searchSubDir(String filepath){
         Path path = Paths.get(getFullPath(filepath));
         List<MyFile> myFiles = new ArrayList<>();
         try{
@@ -198,13 +197,13 @@ public class FileLocalImpl extends FileManager {
             }
 
         }catch (Exception e){
-            throw new MyException(e.getMessage());
+            e.printStackTrace();
         }
         return myFiles;
     }
     // ext u direktorijumu i svim poddirektorijumima
     @Override
-    public List<MyFile> filterByExt(String filepath, String extFilter) throws MyException{
+    public List<MyFile> filterByExt(String filepath, String extFilter) {
         Path path = Paths.get(getFullPath(filepath));
         List<MyFile> myFiles = new ArrayList<>();
         try{
@@ -224,13 +223,13 @@ public class FileLocalImpl extends FileManager {
             }
 
         }catch (Exception e){
-            throw new MyException(e.getMessage());
+            e.printStackTrace();
         }
         return myFiles;
     }
 //substr part of name of file
     @Override
-    public List<MyFile> searchSubstring(String substr) throws MyException{
+    public List<MyFile> searchSubstring(String substr){
         Path path = Paths.get(getFullPath(rootPath));
         List<MyFile> myFiles = new ArrayList<>();
         try{
@@ -250,7 +249,7 @@ public class FileLocalImpl extends FileManager {
                 }
             }
         }catch (Exception e){
-            throw new MyException(e.getMessage());
+            e.printStackTrace();
         }
         return myFiles;
     }
