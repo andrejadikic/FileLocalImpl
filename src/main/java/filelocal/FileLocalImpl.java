@@ -258,10 +258,10 @@ public class FileLocalImpl extends FileManager {
     }
 
     @Override
-    public boolean existName(String filepath, String name) throws MyException{
+    public boolean existName(String filepath, String name){
         File file = new File(getFullPath(filepath));
         if(!file.exists())
-            throw new MyException("Nije dobra putanja");
+            System.out.println("ne postoji file");
         for(File file1: Objects.requireNonNull(file.listFiles())){
             if(file1.getName().equalsIgnoreCase(name))
                 return true;
@@ -270,17 +270,17 @@ public class FileLocalImpl extends FileManager {
     }
 
     @Override
-    public List<String> getParentPath(String s) throws MyException {
+    public List<String> getParentPath(String s) {
         return null;
     }
 
     @Override
-    public List<MyFile> filterByPeriod(String s, LocalDateTime localDateTime, LocalDateTime localDateTime1, boolean b) throws MyException{
+    public List<MyFile> filterByPeriod(String s, LocalDateTime localDateTime, LocalDateTime localDateTime1, boolean b){
         return null;
     }
 
     @Override
-    public void saveConfig() throws MyException{
+    public void saveConfig() {
 
         try(FileWriter writer = new FileWriter(rootPath+File.separator+"config.json")) {
             Gson gson = new Gson();
@@ -289,7 +289,7 @@ public class FileLocalImpl extends FileManager {
             //File javaFile = new File("src/main/resources/config.json");
 
         }catch (Exception e){
-            throw new MyException(e.getMessage());
+            e.printStackTrace();
         }
 
     }
