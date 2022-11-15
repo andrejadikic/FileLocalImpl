@@ -37,7 +37,6 @@ public class FileLocalImpl extends FileManager {
         if(mkdir(path,name)){
             rootPath=(path+File.separator+name);
             this.configuration=configuration;
-            //saveConfig();
             return true;
         }else{
             System.out.println("nije napravljeno");
@@ -80,33 +79,36 @@ public class FileLocalImpl extends FileManager {
     @Override
     public boolean mkdir(String path, String name) {
         File dir = new File(getFullPath(path+File.separator+name));
-        String ext = name.lastIndexOf(".")!=-1 ? name.substring(name.lastIndexOf(".")+1): "";
-        if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),ext,0)){
+        if(dir.getParentFile().exists() && checkConfig(dir.getParentFile().getAbsolutePath(),"",0)){
             return dir.mkdir();
         }
-        return dir.exists();
-    }
-
-    @Override
-    public boolean delete(String path){
-        boolean del = new File(getFullPath(path)).delete();
-        if(del)
-            return true;
+        System.out.println("Vec postoji direktorijum");
         return false;
     }
 
     @Override
-    public boolean move(String oldPath, String newPath) throws MyException{
+    public boolean delete(String path){
+        return new File(getFullPath(path)).delete();
+    }
+
+    @Override
+    public boolean move(String oldPath, String newPath){
         // newPath je destinacija bez imena
         try {
+            File oldFile = new File(getFullPath(oldPath));
+            File newFile = new File(getFullPath(newPath));
+            if(!oldFile.exists() || !newFile.exists()){
+                System.out.println("nepoznata putanja");
+                return false;
+            }
             String ext = FilenameUtils.getExtension(oldPath);
             String newP = getFullPath(newPath)+File.separator+FilenameUtils.getName(oldPath);
-            if(checkConfig(getFullPath(newPath),ext,FileUtils.sizeOf(new File(getFullPath(oldPath))))){
+            if(oldFile.exists() && newFile.exists() && checkConfig(getFullPath(newPath),ext,FileUtils.sizeOf(oldFile))){
                 Files.move(Paths.get(getFullPath(oldPath)), Paths.get(newP));
                 return true;
             }
         } catch (Exception e) {
-            throw new MyException(e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
@@ -127,9 +129,10 @@ public class FileLocalImpl extends FileManager {
         File it = new File(getFullPath(item));
         File des = new File(dest+File.separator+it.getName());
         try {
+            if(it.exists() && des.getParentFile().exists())
             FileUtils.copyFile(it,des);
         } catch (IOException e) {
-
+            e.printStackTrace();
         }
         return des.exists();
     }
@@ -140,7 +143,7 @@ public class FileLocalImpl extends FileManager {
         File des = new File(getFullPath(dest)+File.separator+it.getName());
         try {
             String ext = item.lastIndexOf(".")!=-1 ? item.substring(item.lastIndexOf(".")+1): "";
-            if(checkConfig(getFullPath(dest),ext,FileUtils.sizeOf(it)))
+            if(it.exists() && checkConfig(getFullPath(dest),ext,FileUtils.sizeOf(it)))
                 FileUtils.copyFile(it,des);
         } catch (IOException e) {
             e.printStackTrace();
