@@ -32,17 +32,24 @@ public class Main {
 //
 
 
-//        fileLocal.mkdir("","dir1",7,true);
-//        fileLocal.mkdir("","nsdjfn",8,true);
+        fileLocal.mkdir("","dir1",7,true);
+        fileLocal.mkdir("","dir2",8,true);
+        fileLocal.mkdir("dir1","dir",3,false);
+
+
+        fileLocal.upload("/Users/andrejadikic/Documents/Cover Letter Elsys.pdf","dir1/dir_2");
+        fileLocal.upload("/Users/andrejadikic/Documents/Cover Letter.pdf","dir2");
+
+
 //        fileLocal.mkdir("","fdz",7,true);
 //        fileLocal.mkdir("","nsdj`saafn",7,true);
 //        fileLocal.mkdir("","dir2",7,true);
 //        fileLocal.mkdir("","aa",7,true);
-//        fileLocal.mkdir("dir",5);
+
         //fileLocal.delete("dir_1");
 
-        System.out.println(FileUtils.sizeOfDirectory(file));
-        System.out.println(fileLocal.searchDir(""));
+        System.out.println(fileLocal.searchSubDir(""));
+
 
 //        fileLocal.mkdir("nsdjfn","dirr",10,false);
 //        fileLocal.mkdir("/dir2","subdir",10,false);
