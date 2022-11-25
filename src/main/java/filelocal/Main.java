@@ -1,7 +1,6 @@
 package filelocal;
 
 
-import Data.MyException;
 import Data.MyFile;
 import org.apache.commons.io.FileUtils;
 import paket.Configuration;
@@ -20,7 +19,7 @@ import java.util.ArrayList;
 
 public class Main {
     private MyFile myFile;
-    public static void main(String[] args) throws IOException, MyException {
+    public static void main(String[] args) throws IOException {
         FileLocalImpl fileLocal = new FileLocalImpl();
         fileLocal.createRoot("/Users/andrejadikic/Documents/SKProjekat","root",new Configuration(),8);
         File file = new File("/Users/andrejadikic/Documents/SKProjekat");

@@ -1,7 +1,6 @@
 package filelocal;
 
 
-import Data.MyException;
 import Data.MyFile;
 import com.google.gson.Gson;
 import lombok.Getter;
